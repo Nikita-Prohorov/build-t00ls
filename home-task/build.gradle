@@ -13,9 +13,8 @@ task fatJar(type: Jar) {
                 'Implementation-Version': version,
                 'Main-Class': 'com.test.Project'
     }
-    baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
+    baseName = 'BuildGradle' + '-all'
+
 }
 
 //Get dependencies from Maven central repository
