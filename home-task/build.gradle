@@ -7,7 +7,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 //create a single Jar with all dependencies
-task GradleTask(type: Jar) {
+task build-custom(type: Jar) {
 	manifest {
         attributes 'Implementation-Title': 'Gradle Jar File Example',
                 'Implementation-Version': version,
@@ -16,6 +16,13 @@ task GradleTask(type: Jar) {
     baseName = 'BuildGradle'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
+}
+
+task test-custom(type: Test, dependsOn: build-custom){
+        useJUnit()
+        testLogging {
+        events "started", "passed", "skipped", "failed"
+     }
 }
 
 //Get dependencies from Maven central repository
