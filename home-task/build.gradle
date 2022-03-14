@@ -14,7 +14,7 @@ task GradleTask(type: Jar) {
                 'Main-Class': 'com.test.Project'
     }
     baseName = 'BuildGradle'
-   
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
 
@@ -24,4 +24,7 @@ repositories {
     jcenter()
 }
 
-
+//Project dependencies
+dependencies {
+	compile 'ch.qos.logback:logback-classic:1.1.2'
+}
