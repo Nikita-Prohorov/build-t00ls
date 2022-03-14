@@ -24,8 +24,10 @@ task test_custom(type: Test, dependsOn: build_custom){
 }
 
 
-task hello (type: JavaExec, dependsOn: test_custom) {
-        println("Hello is WORK")
+task hello (dependsOn: test_custom) {
+        doLast{
+             println "Hello is WORK!"
+        }
 }
 
 //Get dependencies from Maven central repository
