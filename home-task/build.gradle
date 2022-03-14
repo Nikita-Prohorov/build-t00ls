@@ -7,19 +7,21 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 //create a single Jar with all dependencies
-task GradleTask('jar') {
+task GradleTask(type: Jar) {
 	manifest {
-        attributes 'Implementation-Title': project.name,
+        attributes 'Implementation-Title': 'Gradle Jar File Example',
                 'Implementation-Version': version,
                 'Main-Class': 'com.test.Project'
     }
     baseName = 'BuildGradle'
-
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }
 
 //Get dependencies from Maven central repository
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 
