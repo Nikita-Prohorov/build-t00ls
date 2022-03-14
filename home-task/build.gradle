@@ -21,10 +21,11 @@ task GradleTask(type: Jar) {
 //Get dependencies from Maven central repository
 repositories {
     mavenCentral()
-    jcenter()
+
 }
 
 //Project dependencies
 dependencies {
-	compile 'org.slf4j:slf4j-api:1.7.12'
+      compile group: 'org.apache.logging.log4j', name: 'log4j-1.2-api', version: '2.4.1'
+      implementation 'org.apache.commons:commons-collections4:4.0'
 }
