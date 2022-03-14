@@ -3,8 +3,8 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 
 version = '1.0'
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 //create a single Jar with all dependencies
 task GradleTask(type: Jar) {
@@ -14,7 +14,7 @@ task GradleTask(type: Jar) {
                 'Main-Class': 'com.test.Project'
     }
     baseName = 'BuildGradle'
-    from { configurations.implementation.collect { it.isDirectory() ? it : zipTree(it) } }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
 
