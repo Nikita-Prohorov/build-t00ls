@@ -14,7 +14,7 @@ task GradleTask(type: Jar) {
                 'Main-Class': 'com.test.Project'
     }
     baseName = 'BuildGradle'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+   
     with jar
 }
 
