@@ -81,7 +81,7 @@
         <dependency>
            <groupId>javax.jws</groupId>
            <artifactId>jsr181-api</artifactId>
-           <scope>probided</scope>
+           <scope>provided</scope>
         </dependency>
     </dependencies>
 
