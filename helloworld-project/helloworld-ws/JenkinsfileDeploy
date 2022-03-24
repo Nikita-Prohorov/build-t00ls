@@ -22,7 +22,7 @@ pipeline {
             sh '''#!/bin/bash
             last="$(cat save.txt)"
             previous=$(($last-1)) 
-            docker run -d -p 8090:8080 --name helloworld-app-$last 172.17.0.1:8082/helloworld-nprohorov:rc-7
+            docker run -d -p 8090:8080 --name helloworld-app-$last 172.17.0.1:8082/helloworld-nprohorov:rc-$last
             sleep 30
             '''
          }
