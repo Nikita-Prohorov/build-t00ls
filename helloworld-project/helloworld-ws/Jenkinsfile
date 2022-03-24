@@ -1,0 +1,57 @@
+pipeline {
+    options { timestamps() }
+    agent any
+    environment {
+        imageName = 'helloworld-nprohorov'
+        registryCredentials = "DockerToNexus"
+        registry = "172.17.0.1:8082"
+        dockerImage = ''
+    }
+    tools { 
+        maven 'mvn3' 
+    }
+    stages {
+        stage('Connect to Git')  {
+            steps {
+                git branch: 'nprohcarau_docker',
+                    url: 'https://github.com/Nikita-Prohorov/build-t00ls.git'
+            }
+        }
+        
+        stage('Package') {
+            steps {
+                dir('helloworld-project/helloworld-ws/') {
+                  sh 'mvn package -DskipTests'
+                }
+            }
+        }
+        stage('Test') { 
+            steps {
+                dir('helloworld-project/helloworld-ws/') {
+                    sh 'mvn test' 
+                }
+            }
+        }
+
+        stage('Build image') {
+          steps{
+              dir('helloworld-project/helloworld-ws/') {
+                script {
+                  dockerImage = docker.build imageName
+                }
+              }
+          }
+        }
+        
+        stage('Send to Nexus') {
+         steps{  
+             script {
+                 docker.withRegistry( 'http://'+registry, registryCredentials ) {
+                 dockerImage.push("rc-${env.BUILD_NUMBER}")
+              }
+            }
+          }
+        }
+        
+    }
+}
