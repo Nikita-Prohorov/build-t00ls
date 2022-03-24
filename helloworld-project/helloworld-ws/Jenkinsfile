@@ -52,6 +52,13 @@ pipeline {
             }
           }
         }
-        
+        stage('Save data') {
+         steps{  
+             sh'''
+              echo ${BUILD_NUMBER} > save.txt
+              '''
+             archiveArtifacts artifacts: 'save.txt', followSymlinks: false
+         }
+        }
     }
 }
