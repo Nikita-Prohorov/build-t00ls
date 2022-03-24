@@ -2,7 +2,7 @@ pipeline {
     options { timestamps() }
     agent any
     environment {
-        imageName = 'helloworld-nprohorov'
+       # imageName = 'helloworld-nprohorov'
         registryCredentials = "DockerToNexus"
         registry = "172.17.0.1:8082"
         dockerImage = ''
