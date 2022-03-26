@@ -215,7 +215,7 @@ pipeline {
                     emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'BuildUserRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
                     }
                 success {
-                    emailext body: "Success ${env.JOB_NAME} pipeline ${env.JOB_URL}", recipientProviders: [[$class: 'BuildUserRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} ${env.BUILD_STATUS}!"
+                    emailext body: "Success ${env.JOB_NAME} pipeline ${env.JOB_URL}", recipientProviders: [[$class: 'BuildUserRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} success!"
                 }
             }    
         }    
