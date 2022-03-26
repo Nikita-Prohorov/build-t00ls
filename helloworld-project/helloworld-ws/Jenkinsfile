@@ -4,61 +4,221 @@ pipeline {
     environment {
         imageName = 'helloworld-nprohorov'
         registryCredentials = "DockerToNexus"
-        registry = "172.17.0.1:8082"
+        registry = "172.19.0.3:8082"
+        sonarCredentials = "JenkinsToSonar"
         dockerImage = ''
+        RollbackVitalya=''
     }
+    
     tools { 
         maven 'mvn3' 
     }
+    
     stages {
-        stage('Connect to Git')  {
-            steps {
-                git branch: 'nprohcarau_docker',
+        stage('Connect To Git')  {
+            steps{
+            script {
+                cleanWs()
+                git branch: 'nprohorov',
                     url: 'https://github.com/Nikita-Prohorov/build-t00ls.git'
+               }
+            }
+            post {
+                unsuccessful {
+                    emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+        }
+        
+        
+        stage('Maven Build') {
+            steps{
+            script {
+                dir('helloworld-project/helloworld-ws/') {
+                    sh 'mvn package -DskipTests'
+                }
+            }
+            }
+            post {
+                unsuccessful {
+                    emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+            }
+        
+        stage ('Scan Sonar') {
+            steps{
+            script {
+                echo "Start Sonar Scan"
+                withSonarQubeEnv('Sonar') {
+                    sh "/var/jenkins_home/tools/hudson.plugins.sonar.SonarRunnerInstallation/Sonar/bin/sonar-scanner -Dsonar.host.url=http://172.17.0.1:9000  -Dsonar.projectKey=FinalTaskTest -Dsonar.projectName=FinalTaskTest -Dsonar.language=java -Dsonar.qualitygate.wait=true -Dsonar.projectVersion=1.0 -Dsonar.java.binaries=helloworld-project/helloworld-ws/target -Dsonar.sources=helloworld-project/helloworld-ws/src/main/ -Dsonar.tests=helloworld-project/helloworld-ws/src/test/ "
+                }
+            }
+            }
+                post {
+                        unsuccessful {
+                            emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+        }
+        
+        stage('Testing') { 
+            parallel {
+                stage('pre-integration-test') {
+                    steps{
+                    script {
+                        dir('helloworld-project/helloworld-ws/') {
+                            sh 'mvn pre-integration-test' 
+                        }
+                    }
+                    }
+                    post {
+                        unsuccessful {
+                            emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+                }
+                stage('integration-test') {
+                    steps{
+                    script {
+                        dir('helloworld-project/helloworld-ws/') {
+                            sh 'echo mvn integration-test' 
+                        }
+                    }
+                    }
+                    post {
+                        unsuccessful {
+                            emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+                }
+                stage('post-integration-test') {
+                    steps{
+                    script {
+                        dir('helloworld-project/helloworld-ws/') {
+                            sh ' echo mvn post-integration-test' 
+                        }
+                    }
+                    }
+                    post {
+                        unsuccessful {
+                            emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+                }
             }
         }
         
-        stage('Package') {
-            steps {
-                dir('helloworld-project/helloworld-ws/') {
-                  sh 'mvn package -DskipTests'
+        stage('Start child Job') {
+            steps{
+            script {
+                build(job: 'MNTLAB-nprohorov-child1-build-job', parameters: [[$class: 'GitParameterValue', name: 'BRANCH_NAME', value: 'origin/nprohcarau']], propagate: true, wait: true)
+                copyArtifacts filter: 'loglist.log', fingerprintArtifacts: true, projectName: 'MNTLAB-nprohorov-child1-build-job'
+            }
+            }
+            post {
+                unsuccessful {
+                         emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+        }
+        
+        stage('Archiving,creation image and send to Nexus') { 
+            parallel {
+                stage('Archiving') {
+                    steps{
+                    script {
+                         sh "gzip -c  loglist.log helloworld-project/helloworld-ws/target/helloworld-ws.war helloworld-project/helloworld-ws/Jenkinsfile > pipeline-nprohorov-${env.BUILD_NUMBER}.gz"
+                         nexusArtifactUploader(
+                            nexusVersion: "nexus3",
+                            protocol: "http",
+                            nexusUrl: "172.19.0.3:8081",
+                            groupId: "ft",
+                            version: "${env.BUILD_NUMBER}",
+                            repository: "maven-releases",
+                            credentialsId: registryCredentials,
+                            artifacts: [
+                                [artifactId: "pipeline-nprohorov",
+                                classifier: '',
+                                file: "pipeline-nprohorov-${env.BUILD_NUMBER}.gz",
+                                type: 'gz']
+                            ] );
+                    }
+                    }
+                    post {
+                        unsuccessful {
+                            emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
+                }
+                stage('Creation Image') {
+                    steps{
+                    script {
+                        dir('helloworld-project/helloworld-ws/') {
+                            script {
+                                dockerImage = docker.build imageName
+                            }
+                        }
+                        script {
+                            docker.withRegistry( 'http://'+registry, registryCredentials ) {
+                                dockerImage.push("${env.BUILD_NUMBER}")
+                            }
+                        }
+                    }
+                    }
+                    post {
+                        unsuccessful {
+                            emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'BuildUserRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                        }
+                    }
                 }
             }
         }
-        stage('Test') { 
+        
+        stage('Manual approval') {
             steps {
-                dir('helloworld-project/helloworld-ws/') {
-                    sh 'mvn test' 
-                }
-            }
-        }
-
-        stage('Build image') {
-          steps{
-              dir('helloworld-project/helloworld-ws/') {
                 script {
-                  dockerImage = docker.build imageName
+                    timeout(time:30, unit:'SECONDS') {
+                        env.APPROVE_PROD = input message: 'Deploy to Production', ok: 'Continue'
+                    }
                 }
-              }
-          }
+            }
         }
         
-        stage('Send to Nexus') {
-         steps{  
-             script {
-                 docker.withRegistry( 'http://'+registry, registryCredentials ) {
-                 dockerImage.push("rc-${env.BUILD_NUMBER}")
-              }
-            }
-          }
-        }
-        stage('Save data') {
-         steps{  
-             sh'''
-              echo ${BUILD_NUMBER} > save.txt
-              '''
-             archiveArtifacts artifacts: 'save.txt', followSymlinks: false
-         }
-        }
+        stage('Deployment ') {
+            steps{
+                script {
+                    withKubeConfig([credentialsId: 'KubernetesConfigure', serverUrl: "https://172.19.0.2:8443", namespace: "nprohorov"]) {
+                        sh "sed -i -e 's,<IMAGE>,172.19.0.3:8082/helloworld-nprohorov:${env.BUILD_NUMBER},g' ./helloworld-project/helloworld-ws/Deploy.yml"
+                        sh "kubectl apply -f ./helloworld-project/helloworld-ws/Deploy.yml "
+                    }
+                }
+                script {
+                   sh '''#!/bin/bash
+                   sleep 60
+                   curl -o /dev/null --silent --head --write-out '%{http_code}\n' 172.19.0.2:30100 > callout.txt; 
+                   '''
+                    }
+                    script {
+                       
+                    withKubeConfig([credentialsId: 'KubernetesConfigure', serverUrl: "https://172.19.0.2:8443", namespace: "nprohorov"]) {
+                        sh '''#!/bin/bash
+                        if [[ $(cat callout.txt) != "200" ]]; then echo 'Rollback dont need';
+                        else listreplica="$(kubectl describe pods  -n nprohorov  | grep 'ReplicaSet')" && kubectl rollout  undo deployment/hello-world-app-deploy -n nprohorov && kubectl delete rs $(echo ${listreplica:27}) -n nprohorov ; fi
+                        '''
+                    }
+                    
+                        }
+                }
+            
+            post {
+                unsuccessful {
+                    emailext body: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED: Check console output at ${env.BUILD_URL} to view the results.", attachLog: true ,recipientProviders: [[$class: 'BuildUserRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} - FAILED!"
+                    }
+                success {
+                    emailext body: "Success ${env.JOB_NAME} pipeline ${env.JOB_URL}", recipientProviders: [[$class: 'BuildUserRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "${env.JOB_NAME} - Build # ${env.BUILD_NUMBER} ${env.BUILD_STATUS}!"
+                }
+            }    
+        }    
     }
 }
