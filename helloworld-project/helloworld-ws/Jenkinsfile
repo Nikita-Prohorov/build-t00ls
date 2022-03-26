@@ -202,7 +202,7 @@ pipeline {
                        
                     withKubeConfig([credentialsId: 'KubernetesConfigure', serverUrl: "https://172.19.0.2:8443", namespace: "nprohorov"]) {
                         sh '''#!/bin/bash
-                        if [[ $(cat callout.txt) != "200" ]]; then echo 'Rollback dont need';
+                        if [[ $(cat callout.txt) == "200" ]]; then echo 'Rollback dont need';
                         else listreplica="$(kubectl describe pods  -n nprohorov  | grep 'ReplicaSet')" && kubectl rollout  undo deployment/hello-world-app-deploy -n nprohorov && kubectl delete rs $(echo ${listreplica:27}) -n nprohorov ; fi
                         '''
                     }
