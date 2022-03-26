@@ -21,7 +21,7 @@ spec:
       - name: DockerToNexus
       containers:
       - name: hello-app
-        image:  172.17.0.1:8082/elloworld-nprohorov:rc-32
+        image:  172.17.0.1:8082/helloworld-nprohorov:rc-32
         ports:
         - containerPort: 8090
 
