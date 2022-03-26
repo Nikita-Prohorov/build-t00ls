@@ -7,7 +7,6 @@ pipeline {
         registry = "172.19.0.3:8082"
         sonarCredentials = "JenkinsToSonar"
         dockerImage = ''
-        RollbackVitalya=''
     }
     
     tools { 
